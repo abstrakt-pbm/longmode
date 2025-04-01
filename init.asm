@@ -1,21 +1,23 @@
 section .multiboot2
     align 8
-    magic dd 0xE85250D6
-    version dd 0x00010002
-    header_length dd multiboot2_header_end - multiboot2_header_start
-    reserved dd 0
-    checksum dd -(0xE85250D6 + 0 + (multiboot2_header_end - multiboot2_header_start))
+    MB2_MAGIC  equ 0xE85250D6
+    MB2_ARCH   equ 0
+    MB2_LENGTH equ 24  ; Длина заголовка + тег окончания
+    MB2_CHECKSUM equ -(MB2_MAGIC + MB2_ARCH + MB2_LENGTH)
 
-multiboot2_header_start:
-    dw 0
-    dw 0
-    dd 8
+    dd MB2_MAGIC
+    dd MB2_ARCH
+    dd MB2_LENGTH
+    dd MB2_CHECKSUM
 
-multiboot2_header_end:
+    ; Тег окончания заголовка (Multiboot2 требует его!)
+    dd 0    ; Тип (0 = конец заголовка)
+    dd 8    ; Длина этого тега (8 байт)
 
-section .text
+section .init 
 global _start_init
 _start_init:
     bits 32
     hlt
-    
+
+section .text

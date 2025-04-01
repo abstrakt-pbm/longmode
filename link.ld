@@ -1,44 +1,72 @@
 ENTRY(_start_init)
 
+KERNEL_VMA = 0xFFFF888000000000;  /* Виртуальный адрес */
+KERNEL_LMA = 0x100000;            /* Физический адрес */
+
 SECTIONS {
-    . = 0x100000;
+    . = KERNEL_LMA;
 
     /* Секция для заголовка Multiboot2 */
     .multiboot2 ALIGN(8) : {
         *(.multiboot2)
-    } :headers
+    } :multiboot2
 
-    /* Секция для кода ядра */
-    .text ALIGN(4K) : {
+    _multiboot2_end = .;
+    _init_lma = KERNEL_LMA + (_multiboot2_end - KERNEL_LMA);
+
+    /* Секция инициализации */
+    .init ALIGN(4K) : AT(_init_lma) {
+        *(.init)
+        *(.init.*)
+    } :init
+
+    _init_end = .;
+    _text_lma = _init_end; /* Секция кода ядра начинается после .init */
+
+    /* --- ПРОМЕЖУТОЧНЫЙ АДРЕС --- */
+    . = KERNEL_VMA; /* Виртуальный адрес ядра начинается с KERNEL_VMA */
+
+    /* Секция кода ядра */
+    .text ALIGN(4K) : AT(_text_lma) {
         *(.text)
         *(.text.*)
     } :text
 
+    _text_end = .;
+    _rodata_lma = _text_end - KERNEL_VMA;
+
     /* Секция для только чтения данных */
-    .rodata ALIGN(4K) : {
+    .rodata ALIGN(4K) : AT(_rodata_lma) {
         *(.rodata)
         *(.rodata.*)
     } :rodata
 
-    /* Секция для данных */
-    .data ALIGN(4K) : {
+    _rodata_end = .;
+    _data_lma = _rodata_end - KERNEL_VMA;
+
+    /* Секция данных */
+    .data ALIGN(4K) : AT(_data_lma) {
         *(.data)
         *(.data.*)
     } :data
 
-    /* Секция для незаполненной памяти (BSS) */
-    .bss ALIGN(4K) : {
+    _data_end = .;
+    _bss_lma = _data_end - KERNEL_VMA;
+
+    /* Секция BSS */
+    .bss ALIGN(4K) : AT(_bss_lma) {
         *(COMMON)
-        *(bss)
+        *(.bss)
     } :bss
 
     __bss_end = .;
 }
 
 PHDRS {
-    headers PT_PHDR PHDRS FLAGS(4);   /* Программный заголовок для структуры ELF */
-    text    PT_LOAD FILEHDR PHDRS FLAGS(5);  /* Чтение + Исполнение */
-    rodata  PT_LOAD FLAGS(4);         /* Только чтение */
-    data    PT_LOAD FLAGS(6);         /* Чтение + Запись */
-    bss     PT_LOAD FLAGS(6);         /* Чтение + Запись */
+    multiboot2 PT_LOAD FILEHDR PHDRS FLAGS(4);   /* Загрузить заголовок Multiboot2 */
+    init       PT_LOAD FLAGS(5);                  /* Загрузить секцию инициализации */
+    text       PT_LOAD FLAGS(5);                  /* Загрузить секцию кода ядра */
+    rodata     PT_LOAD FLAGS(4);                  /* Загрузить только для чтения данные */
+    data       PT_LOAD FLAGS(6);                  /* Загрузить данные (чтение/запись) */
+    bss        PT_LOAD FLAGS(6);                  /* Загрузить незаполненную память */
 }
