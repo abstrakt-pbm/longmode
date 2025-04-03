@@ -1,21 +1,21 @@
-ENTRY(_start_init)
+ENTRY(_init_env)
 
 KERNEL_VMA = 0xFFFF888000000000;  /* Виртуальный адрес */
-KERNEL_LMA = 0x100000;            /* Физический адрес */
+KERNEL_LMA = 0x10000;            /* Физический адрес */
 
 SECTIONS {
     . = KERNEL_LMA;
 
     /* Секция для заголовка Multiboot2 */
-    .multiboot2 ALIGN(8) : {
+    .multiboot2 ALIGN(4k) : {
         *(.multiboot2)
     } :multiboot2
-
     _multiboot2_end = .;
-    _init_lma = KERNEL_LMA + (_multiboot2_end - KERNEL_LMA);
+
+    _init_lma = ALIGN(4K, _multiboot2_end);
 
     /* Секция инициализации */
-    .init ALIGN(4K) : AT(_init_lma) {
+    .init ALIGN(4K) : AT(0x11000) {
         *(.init)
         *(.init.*)
     } :init
