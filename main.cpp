@@ -1,4 +1,6 @@
 
-extern "C" int start_hypervisor() { // Первая функция в lm  
-    return 0;
+extern "C" void start_hypervisor() __attribute__((section(".init64")));
+
+extern "C" void start_hypervisor() {
+    
 }

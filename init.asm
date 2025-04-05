@@ -13,7 +13,7 @@ section .multiboot2
     dd 0    ; Тип (0 = конец заголовка)
     dd 8    ; Длина этого тега (8 байт)
 
-section .init exec
+section .init32 exec
     stack_space: times 4096 db 0;
     pml4_table: times 512 dq 0
     pdpt_table: times 512 dq 0
@@ -90,10 +90,11 @@ switch_cpu_to_lm:
     call set_PG_cpu_bit
     jmp far [jmp_descriptor]
     jmp_descriptor:
-        dd start_hypervisor     ; offset
-        dw 0x08           ; selector
-
+        dd reload_cs            ; offset
+        dw 0x08                 ; selector
+    
     ret
+
 
 set_PAE_cpu_bit:
     mov eax, cr4
@@ -158,17 +159,15 @@ setup_GDT:
     
 
 bits 64
-start_hypervisor:
+reload_cs:
     mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
     mov ss, ax
-    nop
-    nop
-    hlt
+    mov rsp, stack_space + 4096
+    extern start_hypervisor
+    mov rax, start_hypervisor
+    call rax
 
-
-section .text
-    hlt
