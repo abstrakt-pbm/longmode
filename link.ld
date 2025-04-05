@@ -14,6 +14,7 @@ SECTIONS {
 
     _init_lma = ALIGN(4K, _multiboot2_end);
 
+
     /* Секция инициализации */
     .init ALIGN(4K) : AT(0x11000) {
         *(.init)
